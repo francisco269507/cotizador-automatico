@@ -17,6 +17,14 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // Crear superadmin
+        User::create([
+            'name' => 'Super Administrador',
+            'email' => 'superadmin@hyperzas.com',
+            'password' => Hash::make('super123'),
+            'role' => 'superadmin'
+        ]);
+
         // Crear usuarios de prueba
         User::create([
             'name' => 'Administrador',
@@ -176,7 +184,7 @@ class DatabaseSeeder extends Seeder
             [
                 'name' => 'Subida de productos Ecommerce',
                 'type' => 'Venta única',
-                'quantity' => 50,
+                'quantity' => 1,
                 'price' => 500.00,
                 'currency' => 'PEN',
                 'duration' => '-',
@@ -185,7 +193,7 @@ class DatabaseSeeder extends Seeder
                 'active' => true
             ],
             [
-                'name' => 'SKontrol',
+                'name' => '5Kontrol',
                 'type' => 'Suscripción',
                 'quantity' => 1,
                 'price' => 30.00,

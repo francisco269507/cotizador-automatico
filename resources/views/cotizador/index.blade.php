@@ -430,6 +430,12 @@
                             <input type="number" class="quantity-input" value="{{ $product->quantity }}" min="1" 
                                    data-quantity="{{ $product->id }}" onchange="updateQuantityInput({{ $product->id }})">
                             <button type="button" class="quantity-btn" onclick="updateQuantity({{ $product->id }}, 1)">+</button>
+                            <div style="margin-left: 15px; display: flex; align-items: center; gap: 8px;">
+                                <label style="font-size: 0.9rem; font-weight: 600; color: var(--secondary-color);">Desc.%</label>
+                                <input type="number" class="quantity-input" value="0" min="0" max="100" step="1" 
+                                       style="width: 60px;" data-discount="{{ $product->id }}" 
+                                       onchange="updateDiscount({{ $product->id }})" placeholder="0">
+                            </div>
                         </div>
                     </div>
                     @endforeach
@@ -476,9 +482,11 @@
             if (this.checked) {
                 const product = products.find(p => p.id === productId);
                 const quantityInput = document.querySelector(`[data-quantity="${productId}"]`);
+                const discountInput = document.querySelector(`[data-discount="${productId}"]`);
                 selectedProducts.set(productId, {
                     ...product,
-                    quantity: parseInt(quantityInput.value)
+                    quantity: parseInt(quantityInput.value),
+                    discount_percentage: parseFloat(discountInput.value) || 0
                 });
                 quantityControl.style.display = 'flex';
             } else {
@@ -518,6 +526,21 @@
         }
     }
 
+    function updateDiscount(productId) {
+        const input = document.querySelector(`[data-discount="${productId}"]`);
+        let value = parseFloat(input.value);
+        if (isNaN(value) || value < 0) value = 0;
+        if (value > 100) value = 100;
+        input.value = value;
+        
+        if (selectedProducts.has(productId)) {
+            const product = selectedProducts.get(productId);
+            product.discount_percentage = value;
+            selectedProducts.set(productId, product);
+            updateSummary();
+        }
+    }
+
     function updateSummary() {
         const exchangeRate = parseFloat(document.getElementById('exchange_rate').value) || 3.71;
         const count = selectedProducts.size;
@@ -536,19 +559,30 @@
 
         let subtotal_usd = 0;
         let subtotal_pen = 0;
+        let discount_usd = 0;
+        let discount_pen = 0;
 
         selectedProducts.forEach(product => {
             const subtotal = product.price * product.quantity;
+            const discount_amount = subtotal * (product.discount_percentage / 100);
+            const total_item = subtotal - discount_amount;
+            
             if (product.currency === 'USD') {
                 subtotal_usd += subtotal;
+                discount_usd += discount_amount;
             } else {
                 subtotal_pen += subtotal;
+                discount_pen += discount_amount;
             }
         });
 
-        // NO mezclar monedas
-        // Solo convertir USD a PEN y sumar con los PEN
-        const subtotal_pen_total = subtotal_pen + (subtotal_usd * exchangeRate);
+        // Calcular totales después de descuento
+        const subtotal_after_discount_usd = subtotal_usd - discount_usd;
+        const subtotal_after_discount_pen = subtotal_pen - discount_pen;
+
+        // Convertir USD a PEN y sumar con los PEN
+        const subtotal_pen_total = subtotal_after_discount_pen + (subtotal_after_discount_usd * exchangeRate);
+        const discount_pen_total = discount_pen + (discount_usd * exchangeRate);
 
         // Calcular IGV (18%) solo en soles
         const igv_pen = subtotal_pen_total * 0.18;
@@ -556,13 +590,27 @@
         // Total en soles
         const total_pen = subtotal_pen_total + igv_pen;
 
-        document.getElementById('summary-content').innerHTML = `
+        let summaryHTML = `
             <div class="currency-group">
                 <div class="currency-header">💰 Resumen en Soles (PEN)</div>
                 <div class="summary-row">
                     <span class="summary-label">Subtotal</span>
-                    <span class="summary-value">S/ ${subtotal_pen_total.toFixed(2)}</span>
+                    <span class="summary-value">S/ ${(subtotal_pen + (subtotal_usd * exchangeRate)).toFixed(2)}</span>
+                </div>`;
+
+        if (discount_pen_total > 0) {
+            summaryHTML += `
+                <div class="summary-row" style="color: var(--success);">
+                    <span class="summary-label">Descuento</span>
+                    <span class="summary-value">- S/ ${discount_pen_total.toFixed(2)}</span>
                 </div>
+                <div class="summary-row">
+                    <span class="summary-label">Subtotal con Descuento</span>
+                    <span class="summary-value">S/ ${subtotal_pen_total.toFixed(2)}</span>
+                </div>`;
+        }
+
+        summaryHTML += `
                 <div class="summary-row">
                     <span class="summary-label">IGV (18%)</span>
                     <span class="summary-value">S/ ${igv_pen.toFixed(2)}</span>
@@ -573,6 +621,8 @@
                 </div>
             </div>
         `;
+
+        document.getElementById('summary-content').innerHTML = summaryHTML;
     }
 
     // Actualizar resumen cuando cambia el tipo de cambio
@@ -610,7 +660,8 @@
             validity_date: document.getElementById('validity_date').value,
             items: Array.from(selectedProducts.values()).map(p => ({
                 product_id: p.id,
-                quantity: p.quantity
+                quantity: p.quantity,
+                discount_percentage: p.discount_percentage || 0
             }))
         };
 
@@ -619,10 +670,17 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
                 },
                 body: JSON.stringify(data)
             });
+
+            // Verificar si la respuesta es JSON
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                throw new Error('La respuesta del servidor no es JSON válido');
+            }
 
             const result = await response.json();
 
@@ -635,11 +693,18 @@
                     location.reload();
                 }
             } else {
-                alert('Error al generar la cotización: ' + (result.message || 'Error desconocido'));
+                let errorMessage = result.message || 'Error desconocido';
+                if (result.errors) {
+                    errorMessage += '\n\nDetalles:\n';
+                    Object.entries(result.errors).forEach(([field, messages]) => {
+                        errorMessage += `- ${messages.join(', ')}\n`;
+                    });
+                }
+                alert('Error al generar la cotización:\n' + errorMessage);
             }
         } catch (error) {
-            console.error('Error:', error);
-            alert('Error al generar la cotización. Por favor intenta de nuevo.');
+            console.error('Error completo:', error);
+            alert('Error al generar la cotización. Por favor intenta de nuevo.\n\nDetalle: ' + error.message);
         }
     }
 </script>

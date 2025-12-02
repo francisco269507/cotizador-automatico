@@ -12,13 +12,19 @@ class QuoteItem extends Model
         'quantity',
         'unit_price',
         'currency',
-        'subtotal'
+        'subtotal',
+        'discount_percentage',
+        'discount_amount',
+        'total'
     ];
 
     protected $casts = [
         'quantity' => 'integer',
         'unit_price' => 'decimal:2',
-        'subtotal' => 'decimal:2'
+        'subtotal' => 'decimal:2',
+        'discount_percentage' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
+        'total' => 'decimal:2'
     ];
 
     public function quote()

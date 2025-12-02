@@ -201,32 +201,6 @@
         transform: translateY(0);
     }
 
-    .test-users {
-        margin-top: 30px;
-        padding: 20px;
-        background: var(--light-bg);
-        border-radius: 10px;
-        border-left: 4px solid var(--secondary-color);
-    }
-
-    .test-users h4 {
-        font-size: 0.9rem;
-        color: var(--primary-color);
-        margin-bottom: 12px;
-        font-weight: 700;
-    }
-
-    .test-user {
-        font-size: 0.85rem;
-        color: var(--text-light);
-        margin: 6px 0;
-        font-family: 'Courier New', monospace;
-    }
-
-    .test-user strong {
-        color: var(--text-dark);
-    }
-
     @media (max-width: 968px) {
         .login-container {
             flex-direction: column;
@@ -317,13 +291,6 @@
                 Iniciar Sesión
             </button>
         </form>
-
-        <div class="test-users">
-            <h4>Usuarios de Prueba:</h4>
-            <div class="test-user"><strong>Admin:</strong> admin@hyperzas.com / admin123</div>
-            <div class="test-user"><strong>Fran:</strong> fran@hyperzas.com / user123</div>
-            <div class="test-user"><strong>Mafer:</strong> mafer@hyperzas.com / user123</div>
-        </div>
     </div>
 </div>
 @endsection

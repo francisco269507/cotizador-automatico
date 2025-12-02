@@ -102,6 +102,27 @@
             color: var(--primary-color);
         }
 
+        .btn-admin {
+            background: #f39c12;
+            color: var(--white);
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-admin:hover {
+            background: #e67e22;
+            transform: translateY(-2px);
+        }
+
+        .user-name small {
+            opacity: 0.8;
+            font-size: 0.8rem;
+        }
+
         .card {
             background: var(--white);
             border-radius: 12px;
@@ -148,7 +169,10 @@
             Sistema de Cotizaciones Hyperzas
         </a>
         <div class="navbar-user">
-            <span class="user-name">{{ Auth::user()->name }}</span>
+            <span class="user-name">{{ Auth::user()->name }} <small>({{ ucfirst(Auth::user()->role) }})</small></span>
+            @if(Auth::user()->role === 'superadmin')
+                <a href="{{ route('admin.dashboard') }}" class="btn-admin">Panel Admin</a>
+            @endif
             <form action="{{ route('logout') }}" method="POST" style="display: inline;">
                 @csrf
                 <button type="submit" class="btn btn-logout">Cerrar Sesión</button>
