@@ -12,7 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('quote_items', function (Blueprint $table) {
-            //
+            $table->decimal('discount_percentage', 5, 2)->default(0);
+            $table->decimal('discount_amount', 10, 2)->default(0);
+            $table->decimal('total', 10, 2)->default(0);
         });
     }
 
@@ -22,7 +24,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('quote_items', function (Blueprint $table) {
-            //
+            $table->dropColumn(['discount_percentage', 'discount_amount', 'total']);
         });
     }
 };

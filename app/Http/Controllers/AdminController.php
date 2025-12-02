@@ -65,22 +65,22 @@ class AdminController extends Controller
     public function updateUser(Request $request, $id)
     {
         $user = User::findOrFail($id);
-
+        
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $id,
-            'password' => 'nullable|string|min:6',
-            'role' => 'required|in:superadmin,admin,user'
+            'role' => 'required|in:superadmin,admin,user',
+            'password' => 'nullable|string|min:6'
         ]);
 
         $user->name = $validated['name'];
         $user->email = $validated['email'];
         $user->role = $validated['role'];
         
-        if ($request->filled('password')) {
+        if (!empty($validated['password'])) {
             $user->password = Hash::make($validated['password']);
         }
-
+        
         $user->save();
 
         return redirect()->route('admin.users')->with('success', 'Usuario actualizado exitosamente');
@@ -91,20 +91,20 @@ class AdminController extends Controller
     {
         $user = User::findOrFail($id);
         
-        // No permitir que se elimine a sí mismo
+        // Evitar que se elimine a sí mismo
         if ($user->id === auth()->id()) {
-            return redirect()->route('admin.users')->with('error', 'No puedes eliminarte a ti mismo');
+            return redirect()->route('admin.users')->with('error', 'No puedes eliminar tu propio usuario');
         }
-
+        
         $user->delete();
-
+        
         return redirect()->route('admin.users')->with('success', 'Usuario eliminado exitosamente');
     }
 
     // Lista de cotizaciones
     public function quotes()
     {
-        $quotes = Quote::with('user')->latest()->paginate(15);
+        $quotes = Quote::with('user')->latest()->paginate(20);
         return view('admin.quotes.index', compact('quotes'));
     }
 

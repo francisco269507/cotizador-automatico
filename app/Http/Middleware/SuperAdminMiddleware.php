@@ -15,6 +15,10 @@ class SuperAdminMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
+        if (!auth()->check() || auth()->user()->role !== 'superadmin') {
+            abort(403, 'Acceso no autorizado. Solo superadministradores.');
+        }
+        
         return $next($request);
     }
 }
