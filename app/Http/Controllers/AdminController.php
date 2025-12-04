@@ -8,6 +8,7 @@ use App\Models\Quote;
 use App\Models\Product;
 use App\Models\Setting;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 
 class AdminController extends Controller
 {
@@ -19,6 +20,84 @@ class AdminController extends Controller
         $recentQuotes = Quote::with('user')->latest()->take(10)->get();
         
         return view('admin.dashboard', compact('totalUsers', 'totalQuotes', 'recentQuotes'));
+    }
+
+    // Dashboard para usuarios normales
+    public function userDashboard()
+    {
+        $userId = Auth::id();
+        $totalQuotes = Quote::where('user_id', $userId)->count();
+        $recentQuotes = Quote::where('user_id', $userId)->latest()->take(10)->get();
+        
+        return view('user.dashboard', compact('totalQuotes', 'recentQuotes'));
+    }
+
+    // Ver cotizaciones del usuario
+    public function userQuotes()
+    {
+        $userId = Auth::id();
+        $quotes = Quote::where('user_id', $userId)->latest()->paginate(15);
+        
+        return view('user.quotes', compact('quotes'));
+    }
+
+    // Ver detalle de cotización del usuario
+    public function showUserQuote($id)
+    {
+        $userId = Auth::id();
+        $quote = Quote::with(['items.product', 'user'])
+            ->where('user_id', $userId)
+            ->findOrFail($id);
+        
+        return view('user.quote-detail', compact('quote'));
+    }
+
+    // Configuración del usuario (cambiar contraseña)
+    public function userSettings()
+    {
+        return view('user.settings');
+    }
+
+    // Actualizar contraseña del usuario
+    public function updateUserPassword(Request $request)
+    {
+        $validated = $request->validate([
+            'current_password' => 'required',
+            'new_password' => 'required|string|min:6|confirmed',
+        ]);
+
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        if (!Hash::check($validated['current_password'], $user->password)) {
+            return back()->withErrors(['current_password' => 'La contraseña actual no es correcta']);
+        }
+
+        $user->password = Hash::make($validated['new_password']);
+        $user->save();
+
+        return back()->with('success', 'Contraseña actualizada exitosamente');
+    }
+
+    // Actualizar correo del usuario
+    public function updateUserEmail(Request $request)
+    {
+        $validated = $request->validate([
+            'email' => 'required|email|unique:users,email,' . Auth::id(),
+            'password' => 'required',
+        ]);
+
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        if (!Hash::check($validated['password'], $user->password)) {
+            return back()->withErrors(['password' => 'La contraseña no es correcta']);
+        }
+
+        $user->email = $validated['email'];
+        $user->save();
+
+        return back()->with('success', 'Correo electrónico actualizado exitosamente');
     }
 
     // Lista de usuarios
@@ -92,7 +171,7 @@ class AdminController extends Controller
         $user = User::findOrFail($id);
         
         // Evitar que se elimine a sí mismo
-        if ($user->id === auth()->id()) {
+        if ($user->id === Auth::id()) {
             return redirect()->route('admin.users')->with('error', 'No puedes eliminar tu propio usuario');
         }
         

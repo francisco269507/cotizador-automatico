@@ -20,6 +20,14 @@ Route::middleware('auth')->group(function () {
     Route::post('/cotizacion', [QuoteController::class, 'store'])->name('cotizacion.store');
     Route::get('/cotizacion/{id}/pdf', [QuoteController::class, 'generatePDF'])->name('cotizacion.pdf');
     
+    // Rutas de Usuario Normal
+    Route::get('/user/dashboard', [AdminController::class, 'userDashboard'])->name('user.dashboard');
+    Route::get('/user/quotes', [AdminController::class, 'userQuotes'])->name('user.quotes');
+    Route::get('/user/quotes/{id}', [AdminController::class, 'showUserQuote'])->name('user.quotes.show');
+    Route::get('/user/settings', [AdminController::class, 'userSettings'])->name('user.settings');
+    Route::post('/user/settings/password', [AdminController::class, 'updateUserPassword'])->name('user.settings.password');
+    Route::post('/user/settings/email', [AdminController::class, 'updateUserEmail'])->name('user.settings.email');
+    
     // Rutas de SuperAdmin
     Route::middleware('superadmin')->prefix('admin')->name('admin.')->group(function () {
         Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');

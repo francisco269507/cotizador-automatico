@@ -172,6 +172,8 @@
             <span class="user-name">{{ Auth::user()->name }} <small>({{ ucfirst(Auth::user()->role) }})</small></span>
             @if(Auth::user()->role === 'superadmin')
                 <a href="{{ route('admin.dashboard') }}" class="btn-admin">Panel Admin</a>
+            @elseif(Auth::user()->role === 'user')
+                <a href="{{ route('user.dashboard') }}" class="btn-admin">Mi Dashboard</a>
             @endif
             <form action="{{ route('logout') }}" method="POST" style="display: inline;">
                 @csrf
